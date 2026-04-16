@@ -1,0 +1,39 @@
+# Docker Compose para Kanban Pro
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kanban-backend
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=file:./dev.db
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      - PORT=3001
+    volumes:
+      - ./backend/prisma/dev.db:/app/prisma/dev.db
+    networks:
+      - kanban-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: kanban-frontend
+    restart: always
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_URL=http://localhost:3001/api
+    depends_on:
+      - backend
+    networks:
+      - kanban-network
+
+networks:
+  kanban-network:
+    driver: bridge

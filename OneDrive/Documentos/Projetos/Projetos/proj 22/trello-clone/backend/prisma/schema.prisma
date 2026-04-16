@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  boards        Board[]
+  cards         Card[]
+  comments      Comment[]
+  activities    Activity[]
+  notifications Notification[]
+}
+
+model Board {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  coverColor  String?
+  coverImage  String?
+  isFavorite  Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  lists      List[]
+  activities Activity[]
+  members    BoardMember[]
+}
+
+model BoardMember {
+  id     String @id @default(uuid())
+  role   String @default("member")
+  boardId String
+  board   Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId])
+}
+
+model List {
+  id       String @id @default(uuid())
+  title    String
+  position Int
+
+  boardId String
+  board   Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  cards Card[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([boardId])
+}
+
+model Card {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  position    Int
+  dueDate     DateTime?
+  priority    String    @default("medium")
+  isArchived  Boolean   @default(false)
+  coverColor  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  listId String
+  list   List   @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  assigneeId String?
+  assignee   User?   @relation(fields: [assigneeId], references: [id])
+
+  labels     Label[]
+  checklists Checklist[]
+  comments   Comment[]
+  activities Activity[]
+  attachments Attachment[]
+
+  @@index([listId])
+}
+
+model Label {
+  id    String @id @default(uuid())
+  name  String
+  color String
+
+  cards Card[]
+}
+
+model Checklist {
+  id    String @id @default(uuid())
+  title String
+
+  cardId String
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  items ChecklistItem[]
+}
+
+model ChecklistItem {
+  id        String  @id @default(uuid())
+  text      String
+  completed Boolean @default(false)
+
+  checklistId String
+  checklist   Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id   String @id @default(uuid())
+  text String
+
+  cardId String
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Attachment {
+  id       String @id @default(uuid())
+  filename String
+  url      String
+  type     String
+  size     Int
+
+  cardId String
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model Activity {
+  id          String @id @default(uuid())
+  type        String
+  description String
+
+  boardId String?
+  board   Board?  @relation(fields: [boardId], references: [id], onDelete: SetNull)
+
+  cardId String?
+  card   Card?   @relation(fields: [cardId], references: [id], onDelete: SetNull)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id      String  @id @default(uuid())
+  type    String
+  title   String
+  message String
+  read    Boolean @default(false)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
